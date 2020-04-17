@@ -1,0 +1,8 @@
+html body {
+    height:100%
+}
+
+.mainDiv{
+    max-height: 100%;
+    overflow: auto;
+}
