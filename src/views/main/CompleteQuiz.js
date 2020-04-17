@@ -13,21 +13,19 @@ const CompleteQuiz=({answers,questions, startOver})=>{
         let counter =0;
         let incorrect =0;
         const tableData = Object.keys(questions).reduce((a,v,i)=>{
-           const {title, answer}=questions[v];
            const userAnswer = answers[i].answer;
            const correct = answers[i].correct;
 
            correct ? counter++:incorrect++;
             a.push([
                 i+1,
-                title,
-                answer,
-                correct?<Success>{userAnswer}</Success>:<Danger>{userAnswer}</Danger>
+                userAnswer,
+                correct?<Success>Correct</Success>:<Danger>Incorrect</Danger>
             ]);
             return a;
         },[]);
 
-        const tableHead = ['No','Question','Answer','Your Answer'];
+        const tableHead = ['No','Your Answer', "Correct"];
 
         return (
             <div>
