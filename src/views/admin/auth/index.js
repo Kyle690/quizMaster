@@ -67,7 +67,7 @@ class Auth extends React.Component{
       this.props.registerUser(formValues,res=>{
           if(res.status===1){
               this.setState({loading:false});
-              history.push('/admin/home');
+              history.push('/admin/home/user');
           }else{
               this.setState({loading:false,registerError:res.msg});
           }

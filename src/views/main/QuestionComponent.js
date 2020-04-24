@@ -17,9 +17,16 @@ class QuestionComponent extends React.Component{
     componentDidUpdate(prevProps, prevState, snapshot) {
         const answer = this.props.answer;
         if(answer && this.state.answer===''){
-            this.setState({answer})
+            this.setState({answer});
+        }
+        else if(prevProps.question !==this.props.question){
+            this.setState({answer:''});
         }
     };
+
+    componentWillUnmount() {
+        this.setState({answer:'',error:null});
+    }
 
     renderQuestion=()=>{
         const {type, options}=this.props.question;
@@ -128,12 +135,10 @@ class QuestionComponent extends React.Component{
         return (
             <GridContainer justify={'center'}>
                 <GridItem xs={12}>
-                    <Danger>{this.state.error}</Danger>
-                </GridItem>
-                <GridItem xs={12}>
                     <h4>Question   <strong>{this.props.questionNo}</strong></h4>
                     <div style={{paddingTop:'5%', paddingBottom:'10%'}}>
-                    {this.renderQuestion()}
+                        {this.renderQuestion()}
+                        <Danger>{this.state.error}</Danger>
                     </div>
                 </GridItem>
                 <GridItem xs={6} container justify={'flex-end'}>

@@ -37,14 +37,22 @@ class AdminHome extends React.Component{
     };
 
     renderQuizes=()=>{
-        if(this.props.quizes){
-            const keys=Object.keys(this.props.quizes);
+        const quizes = this.props.quizes;
+        if(quizes){
+            const keys=Object.keys(quizes);
 
 
             const tableData=keys.reduce((a,v, index)=>{
 
-                const {title,active,completed,date}=this.props.quizes[v].details;
-                const qNo =this.props.quizes[v].questions? Object.keys(this.props.quizes[v].questions).length:0;
+                const {title,active,completed,date}=quizes[v].details;
+                const qNo =quizes[v].sections?
+                    Object.keys(quizes[v].sections).reduce((ar,va)=>{
+                        if(quizes[v].sections[va].questions){
+                            ar+=Object.keys(quizes[v].sections[va].questions).length
+                        }
+                        return ar;
+                    },0)
+                    :0;
                 const people=this.props.quizes[v].answers?Object.keys(this.props.quizes[v].answers).length:0;
                 a.push([
                     index+1,

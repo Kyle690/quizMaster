@@ -13,9 +13,16 @@ import NavPills from "../../../components/NavPills/NavPills";
 import Button from '../../../components/CustomButtons/Button';
 import history from "../../../history";
 import Details from "./QuizComponents/Details";
-import {addQuestion, deleteQuestion, updateQuestion, updateQuizDetails} from "../../../store/actions/quizActions";
+import {
+    addQuestion,
+    addSection,
+    deleteQuestion, deleteSection, editSection,
+    updateQuestion,
+    updateQuizDetails
+} from "../../../store/actions/quizActions";
 import Questions from "./QuizComponents/Questions";
 import Answers from "./QuizComponents/Answers";
+import Sections from './QuizComponents/Sections';
 class EditQuiz extends React.Component{
 
     state={
@@ -41,10 +48,14 @@ class EditQuiz extends React.Component{
 
     renderQuestions=()=>{
         return (
-            <Questions
-                questions={this.props.questions}
-                onSave={this.onQuestionSave}
-                onDelete={this.onQuestionDelete}
+            <Sections
+                sections={this.props.sections}
+                addSection={this.addSection}
+                editSection={this.editSection}
+                deleteSection={this.deleteSection}
+                addQuestion={this.addQuestion}
+                editQuestion={this.editQuestion}
+                deleteQuestion={this.deleteQuestion}
             />
         )
     };
@@ -53,7 +64,7 @@ class EditQuiz extends React.Component{
         return (
             <Answers
                 answers={this.props.answers}
-                questions={this.props.questions}
+                sections={this.props.sections}
             />
         )
     };
@@ -78,64 +89,128 @@ class EditQuiz extends React.Component{
         })
     };
 
-    onQuestionSave=(data,id)=>{
+    // add Section
+    addSection=(title)=>{
+        const {uid, id}=this.props;
         this.setState({loading:true});
-      if(id){
-          // update existing question
-          this.props.updateQuestion(this.props.uid,this.props.id,id,data,res=>{
-              res.status===1?
-                  this.setState({
-                      loading:false,
-                      notif:true,
-                      notifMsg:'Question Updated Successfully',
-                      notifType:'success'
-                  }):
-                  this.setState({
-                      loading:false,
-                      notif:true,
-                      notifMsg:res.msg,
-                      notifType:'warning'
-                  })
-          })
-      }else{
-          // add new question
-          this.props.addQuestion(this.props.uid,this.props.id,data,res=>{
-              res.status===1?
-                  this.setState({
-                      loading:false,
-                      notif:true,
-                      notifMsg:'Question Added Successfully',
-                      notifType:'success'
-                  }):
-                  this.setState({
-                      loading:false,
-                      notif:true,
-                      notifMsg:res.msg,
-                      notifType:'warning'
-                  })
-          })
-
-      }
-    };
-
-    onQuestionDelete=(id)=>{
-        this.setState({loading:true});
-        this.props.deleteQuestion(this.props.uid,this.props.id,id,res=>{
+        this.props.addSection(uid,id,title,res=>{
             res.status===1?
                 this.setState({
                     loading:false,
                     notif:true,
-                    notifMsg:'Question deleted Successfully',
+                    notifMsg:'Section Added successfully!',
                     notifType:'success'
                 }):
                 this.setState({
                     loading:false,
                     notif:true,
                     notifMsg:res.msg,
-                    notifType:'warning'
+                    notifType:'danger'
                 })
         })
-    };
+    }
+    // edit section
+    editSection=(title, sectionId)=>{
+        const {uid, id}=this.props;
+        this.setState({loading:true});
+        this.props.editSection(uid,id,sectionId,title,res=>{
+            res.status===1?
+                this.setState({
+                    loading:false,
+                    notif:true,
+                    notifMsg:'Section Updated successfully!',
+                    notifType:'success'
+                }):
+                this.setState({
+                    loading:false,
+                    notif:true,
+                    notifMsg:res.msg,
+                    notifType:'danger'
+                })
+        })
+    }
+    // delete section
+    deleteSection=(sectionId)=>{
+        const {uid, id}=this.props;
+        this.setState({loading:true});
+        this.props.deleteSection(uid,id,sectionId,res=>{
+            res.status===1?
+                this.setState({
+                    loading:false,
+                    notif:true,
+                    notifMsg:'Section Deleted successfully!',
+                    notifType:'success'
+                }):
+                this.setState({
+                    loading:false,
+                    notif:true,
+                    notifMsg:res.msg,
+                    notifType:'danger'
+                })
+        })
+    }
+
+    // todo - add functions to add, delete, edit questions for each section
+    // add question
+    addQuestion=(data,sectionId)=>{
+        const {uid, id}=this.props;
+        this.setState({loading:true});
+        this.props.addQuestion(uid,id,sectionId,data,res=>{
+            res.status===1?
+                this.setState({
+                    loading:false,
+                    notif:true,
+                    notifMsg:'Question Added successfully!',
+                    notifType:'success'
+                }):
+                this.setState({
+                    loading:false,
+                    notif:true,
+                    notifMsg:res.msg,
+                    notifType:'danger'
+                })
+        })
+    }
+    // edit question
+    editQuestion=(questionData,questionId, sectionId)=>{
+        const {uid, id}=this.props;
+        this.setState({loading:true});
+        this.props.updateQuestion(uid,id,sectionId,questionId,questionData,res=>{
+            res.status===1?
+                this.setState({
+                    loading:false,
+                    notif:true,
+                    notifMsg:'Question Updated successfully!',
+                    notifType:'success'
+                }):
+                this.setState({
+                    loading:false,
+                    notif:true,
+                    notifMsg:res.msg,
+                    notifType:'danger'
+                })
+        })
+    }
+    // delete question
+    deleteQuestion=(sectionId, questionId)=>{
+        const {uid, id}=this.props;
+        this.setState({loading:true});
+        this.props.deleteQuestion(uid,id,questionId,sectionId,res=>{
+            res.status===1?
+                this.setState({
+                    loading:false,
+                    notif:true,
+                    notifMsg:'Question Deleted successfully!',
+                    notifType:'success'
+                }):
+                this.setState({
+                    loading:false,
+                    notif:true,
+                    notifMsg:res.msg,
+                    notifType:'danger'
+                })
+        })
+    }
 
 
     render(){
@@ -155,7 +230,7 @@ class EditQuiz extends React.Component{
                     close={()=>this.setState({notif:false,notifMsg:null, notifType: 'warning'})}
                 />
                 <GridContainer  justify={'center'} >
-                    <GridItem xs={12} sm={12} md={8} style={{marginTop:'10%'}}>
+                    <GridItem xs={12} sm={12} md={10} style={{marginTop:'10%'}}>
                         <Card>
                             <CardHeader color={'warning'}>
                                 <GridItem container justify={'space-between'} alignItems={'center'}>
@@ -166,7 +241,7 @@ class EditQuiz extends React.Component{
                                     </Button>
                                 </GridItem>
                             </CardHeader>
-                            <CardBody>
+                            <CardBody style={{backgroundColor:'#fff9ec'}}>
                                 <NavPills
                                     color={'warning'}
                                     tabs={[
@@ -199,16 +274,25 @@ const mapStateToProps=(state)=>{
     const details= quiz?quiz.details:null;
     const title=quiz?quiz.details.title:'';
     const id = quiz?quiz.id:null;
-    const questions = quiz?quiz.questions?quiz.questions:null:null;
+    const sections = quiz?quiz.sections?quiz.sections:null:null;
     const answers = quiz?quiz.answers?quiz.answers:null:null;
     return{
         title,
         details,
         uid,
         id,
-        questions,
+        sections,
         answers
     }
 };
 
-export default withRouter(connect(mapStateToProps, {updateQuizDetails, addQuestion, deleteQuestion, updateQuestion})(EditQuiz));
+export default withRouter(connect(mapStateToProps,
+    {
+        updateQuizDetails,
+        addQuestion,
+        deleteQuestion,
+        updateQuestion,
+        addSection,
+        deleteSection,
+        editSection
+    })(EditQuiz));

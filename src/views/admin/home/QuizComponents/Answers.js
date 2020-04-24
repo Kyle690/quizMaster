@@ -4,39 +4,48 @@ import GridContainer from "../../../../components/Grid/GridContainer";
 import GridItem from "../../../../components/Grid/GridItem";
 import Success from "../../../../components/Typography/Success";
 import Danger from "../../../../components/Typography/Danger";
+import Card from "../../../../components/Card/Card";
+import CardHeader from "../../../../components/Card/CardHeader";
+import CardBody from "../../../../components/Card/CardBody";
 class Answers extends React.Component{
 
     renderUsers=()=>{
         const answers = this.props.answers;
-        const questions = this.props.questions;
-        if(answers){
+        const sections = this.props.sections;
+        if(answers && sections){
             const answerKeys =Object.keys(answers);
-            const questionKeys=Object.keys(questions);
-            let totalPercentage =0;
+            const sectionsKeys=Object.keys(sections);
+            const tableHead = ['Name','Correct Answers','Percentage'];
+
+            const totalQuestions = sectionsKeys.reduce((a,v)=>{
+
+                const questions = sections[v].questions;
+                if(questions){
+                    a+=Object.keys(questions).length;
+                }
+
+
+               return a;
+            },0);
+
+            let totalPercentage=0;
+
             const tableData = answerKeys.reduce((a,v)=>{
 
                 const name = answers[v].name;
-                let counter = 0;
-                Object.keys(answers[v]).map(index=>{
-                    if(index!=='name'){
-                        if(answers[v][index].correct){
-                            counter ++
-                        }
-                    }
-                });
-                const percentage = (counter/questionKeys.length*100).toFixed(2);
-                totalPercentage += parseInt(percentage);
+                const counter = answers[v].totalCorrect;
+                const percentage = (counter/totalQuestions*100).toFixed(2);
+                totalPercentage+=parseFloat(percentage);
                 a.push([
                     name,
-                    counter+'/'+questionKeys.length,
+                    counter+'/'+totalQuestions,
                     percentage+'%'
                 ]);
 
 
                 return a;
             },[]);
-            const tableHead = ['Name','Correct Answers','Percentage'];
-            console.log(totalPercentage);
+
             return (
                 <GridItem>
                     <h2>Users</h2>
@@ -52,60 +61,98 @@ class Answers extends React.Component{
         }
         else{
             return (
-                <div>
+                <GridItem>
                     <h5>No Answers yet, to see if new answers have been submitted, close the quiz and reopen it.</h5>
-                </div>
+                </GridItem>
             )
         }
     };
 
     renderQuestions=()=>{
         const answers = this.props.answers;
-        const questions = this.props.questions;
-        if(answers){
-            const answerKeys =Object.keys(answers);
-            const questionKeys=Object.keys(questions);
-
+        const sections = this.props.sections;
+        if(answers && sections){
+            const sectionKeys=Object.keys(sections);
+            const answerKeys = Object.keys(answers);
+            const tableHead=['Name','Answer','Correct']
             return (
-                <GridContainer>
-                    {questionKeys.map((qKey,i)=>{
-                        const {title,answer}=questions[qKey];
-                        let totalCorrect=0;
-                        const tableData=answerKeys.reduce((a,v)=>{
-                            const name =answers[v].name;
-                            const {answer, correct} = answers[v][i];
-                            if(correct){
-                                totalCorrect+=1;
-                            }
-                            a.push([
-                                name,
-                                answer,
-                                correct?<Success>Correct</Success>:<Danger>Incorrect</Danger>
-                            ]);
-                            return a;
-                        },[]);
+                <div>
+                    {sectionKeys.map(key=>{
+                        const sectionTitle = sections[key].title;
+                        const questions = sections[key].questions;
+                        if(questions){
+                            const questionKeys = Object.keys(questions);
+                            const sectionAnswers = answerKeys.reduce((a,v)=>{
+                                a[v]={
+                                    name:answers[v].name,
+                                    answers:answers[v].sections[key]
+                                }
+                                return a;
+                            },{});
 
-                        const percentageCorrect = (totalCorrect/answerKeys.length)*100;
+                            let sectionTotalCorrect=0;
+                            const totalQuestionUsers = questionKeys.length*Object.keys(sectionAnswers).length;
 
+                            return (
+                                <Card style={{paddingTop:15,paddingBottom:15}}>
+                                    <CardHeader color={'info'}>
+                                        <GridItem>
+                                            <h5>Section: {sectionTitle}</h5>
+                                        </GridItem>
+                                    </CardHeader>
+                                    <CardBody>
+                                        {
+                                            questionKeys.map((qKey,i)=>{
+                                                const questionTitle = questions[qKey].title;
+                                                const questionAnswer = questions[qKey].answer;
+                                                let totalCorrect=0;
+                                                const tableData = Object.keys(sectionAnswers).reduce((a,v)=>{
 
-                        return (
-                            <GridItem xs={12} key={i} style={{paddingTop:'5%'}}>
-                                <div style={{display:'flex', justifyContent:'space-between'}}>
-                                    <div>
-                                        <h4>Question {i+1} - {title}</h4>
-                                        <Success>{answer}</Success>
-                                    </div>
-                                    <h5>No. Correct: {percentageCorrect.toFixed(2)}%</h5>
-                                </div>
-                                <CustomTable
-                                    tableData={tableData}
-                                />
-                            </GridItem>
-                        )
+                                                    const person = sectionAnswers[v].name;
+                                                    const {answer,correct} = sectionAnswers[v].answers[i];
+                                                    if(correct){
+                                                        totalCorrect++;
+                                                    }
+                                                    a.push([
+                                                        person,
+                                                        answer,
+                                                        correct?<Success>Correct</Success>:<Danger>Incorrect</Danger>
+                                                    ])
+
+                                                    return a;
+                                                },[]);
+
+                                                sectionTotalCorrect+=totalCorrect;
+                                                return (
+                                                    <div>
+                                                        <GridItem container justify={'space-between'}>
+                                                            <div>
+                                                                <h6>{i+1} - {questionTitle}</h6>
+                                                                <Success>{questionAnswer}</Success>
+                                                            </div>
+                                                            <h6>Total Correct: {totalCorrect}</h6>
+                                                        </GridItem>
+                                                        <CustomTable
+                                                            tableHeaderColor={'info'}
+                                                            tableHead={tableHead}
+                                                            tableData={tableData}
+                                                        />
+                                                    </div>
+                                                )
+
+                                            })
+                                        }
+                                        <h6>Overall Sections Percentage Correct: {sectionTotalCorrect/totalQuestionUsers*100}%</h6>
+                                    </CardBody>
+                                </Card>
+                            )
+                        }
+
 
                     })}
-                </GridContainer>
+                </div>
             )
+
         }
     };
 

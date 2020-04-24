@@ -8,18 +8,26 @@ import history from "../../../history";
 import {Close, PlayArrow, ChevronLeft,ChevronRight, Refresh} from "@material-ui/icons";
 import CardBody from "../../../components/Card/CardBody";
 import GridContainer from "../../../components/Grid/GridContainer";
+import ViewSection from "./QuizComponents/ViewSection";
 
 class ViewQuiz extends React.Component{
 
     state={
-      questionNo:0,
+      sectionNo:0,
       start:false,
-      finish:false
+      finish:false,
+      sections:null
     };
 
-    renderQuestions=()=>{
-        if(this.props.questions){
-            const {questionNo,start, finish}=this.state;
+    componentDidMount() {
+        this.setState({sections:this.props.sections})
+    }
+
+    renderSections=()=>{
+        const sections = this.state.sections;
+        if(sections){
+            const {sectionNo,start, finish}=this.state;
+            const sectionsKeys= Object.keys(sections)
             if(!start){
                 return (
                     <GridContainer justify={'center'}>
@@ -29,57 +37,66 @@ class ViewQuiz extends React.Component{
                         </Button>
                     </GridContainer>
                 )
-            }else if(finish){
+            }
+        else if(finish){
                 return (
                     <GridContainer justify={'center'}>
-                        <Button onClick={()=>this.setState({start:false, finish: false,questionNo: 0})} round color={'info'}>
+                        <Button onClick={()=>this.setState({start:false, finish: false,sectionNo: 0})} round color={'info'}>
                             <Refresh/>
                             Start Over
                         </Button>
                     </GridContainer>
                 )
             }
-            else{
-                const questions = this.props.questions;
-                const keys = Object.keys(questions);
-                const {title} = questions[keys[questionNo]];
-                const Previous=questionNo-1<0?0:questionNo-1;
-                const Next= questionNo+1>keys.length?keys.length-1:questionNo+1;
-                const Finish= questionNo+1>=keys.length;
-                return (
-                    <GridContainer >
-                        <GridItem xs={12} sm={12} md={12}>
-                            <h3>Question No {questionNo+1}/{keys.length}</h3>
-                        </GridItem>
-                        <GridItem xs={12} sm={12} md={12} container justify={'center'} style={{paddingTop:50, paddingBottom:50}}>
-                            <h3>{title}</h3>
-                        </GridItem>
-                        <GridItem xs={6} container justify={'flex-end'}>
-                            <Button onClick={()=>this.setState({questionNo:Previous})} color={'warning'} size={'sm'} round>
-                                <ChevronLeft/>
-                                Previous
-                            </Button>
-                        </GridItem>
-                        <GridItem xs={6}>
-                            <Button onClick={()=>this.setState({questionNo:Next, finish:Finish})} color={'warning'} size={'sm'} round>
-                                <ChevronRight/>
-                                Next
-                            </Button>
-                        </GridItem>
-                    </GridContainer>
-                )
+            else {
+
+                const section = sections[sectionsKeys[sectionNo]]
+               // console.log(section.questions);
+                if(section){
+                    return (
+                        <div>
+                            <h6>Section: {section.title}</h6>
+                            <ViewSection
+                                questions={section.questions}
+                                handleMove={this.handleMoveSection}
+                            />
+                        </div>
+
+                    )
+                }
+
+
+
             }
         }else{
             return (
                 <div>
-                    <h3>No Questions yet!</h3>
+                    <h3>No Sections yet!</h3>
                 </div>
             )
         }
-
-
-
     };
+
+    handleMoveSection=(mode)=>{
+        const {sectionNo}=this.state;
+        const sections = this.state.sections;
+        const sectionKeys=Object.keys(sections);
+
+        if(mode==='next'){
+            if(sectionNo+1>=sectionKeys.length){
+                // end of quiz
+                this.setState({finish:true})
+            }else{
+                this.setState({sectionNo:sectionNo+1})
+            }
+        }else{
+            if(sectionNo-1<0){
+                this.setState({sectionNo:0})
+            }else{
+                this.setState({sectionNo: sectionNo-1})
+            }
+        }
+    }
 
 
     render(){
@@ -98,7 +115,7 @@ class ViewQuiz extends React.Component{
                             </GridItem>
                         </CardHeader>
                         <CardBody>
-                            {this.renderQuestions()}
+                            {this.renderSections()}
                         </CardBody>
                     </Card>
                 </GridItem>
@@ -113,14 +130,14 @@ const mapStateToProps =state=>{
     const details= quiz?quiz.details:null;
     const title=quiz?quiz.details.title:'';
     const id = quiz?quiz.id:null;
-    const questions = quiz?quiz.questions?quiz.questions:null:null;
+    const sections = quiz?quiz.sections?quiz.sections:null:null;
 
     return{
         title,
         details,
         uid,
         id,
-        questions
+        sections
     }
 };
 

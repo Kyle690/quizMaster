@@ -70,6 +70,16 @@ class QuestionModal extends React.Component{
         if(test){
             const data={title,answer,type,A,B,C,D};
             this.props.onSave(data);
+            this.setState({
+                title:'',
+                answer:'',
+                type:'text',
+                A:'',
+                B:'',
+                C:'',
+                D:'',
+                error:null
+            });
         }else{
            this.setState({error:error})
         }
@@ -160,7 +170,6 @@ class QuestionModal extends React.Component{
             D:'',
             error:null
         });
-
         this.props.close();
     };
 

@@ -16,6 +16,7 @@ import CustomInput from "../../components/CustomInput/CustomInput";
 import QuestionComponent from "./QuestionComponent";
 import AnswersComponent from "./AnswersComponent";
 import CompleteQuiz from "./CompleteQuiz";
+import SectionComponent from "./SectionComponent";
 const image = require('../../assets/img/bg.jpg');
 class Home extends React.Component{
 
@@ -30,7 +31,7 @@ class Home extends React.Component{
                     this.setState({
                         loading:false,
                         details:this.props.details,
-                        questions:this.props.questions,
+                        sections:this.props.sections,
                         uid,
                         quizId
                     }):
@@ -49,11 +50,11 @@ class Home extends React.Component{
         quizId:null,
         loading:true,
         details:null,
-        questions:null,
+        sections:null,
+        sectionNo:0,
         error:null,
         started:false,
         name:'',
-        questionNo:0,
         answers:{},
         nameComplete:false,
         answersComplete:false,
@@ -62,9 +63,10 @@ class Home extends React.Component{
     };
 
     renderQuestions=()=>{
-        const {name,started,questions,questionNo,answers, nameComplete, answersComplete, quizComplete, quizCompleteData}=this.state;
-        if(questions){
-            const questionKeys=Object.keys(questions);
+        const {name,started,sections,sectionNo,answers, nameComplete, answersComplete, quizComplete, quizCompleteData}=this.state;
+        if(sections){
+            const sectionKeys=Object.keys(sections);
+            // check if user has started quiz
             if(!started){
                 return (
                     <GridItem container justify={'center'} alignItems={'center'}>
@@ -75,6 +77,7 @@ class Home extends React.Component{
                     </GridItem>
                 )
             }
+            // check if user has entered name
             else if(!nameComplete){
                 return (
                     <GridItem>
@@ -97,68 +100,86 @@ class Home extends React.Component{
                     </GridItem>
                 )
             }
+            // check if user has completed the quiz
             else if(quizComplete){
                 // build a complete quiz review
                 return (
                     <CompleteQuiz
                         answers={quizCompleteData}
-                        questions={questions}
+                        sections={sections}
                         startOver={this.handleStartOver}
                     />
                 )
             }
+            // check if user has completed all the answers and is ready for review
             else if(answersComplete){
                 // end of questions submit answers
                 // build something to review answers & build something to start over
                return (
                    <AnswersComponent
                     answers={answers}
-                    questions={questions}
+                    sections={sections}
                     onSubmit={this.handleSubmitAnswers}
                    />
                )
             }
+            // render the answers
             else{
                 // render questions
-                return (
-                    <QuestionComponent
-                        questionNo={questionNo+1+'/'+questionKeys.length}
-                        answer={answers[questionNo]?answers[questionNo]:null}
-                        question={questions[questionKeys[questionNo]]}
-                        move={this.handleMove}
-                    />
-                )
+                if(sections[sectionKeys[sectionNo]].questions) {
+                    return (
+                        <SectionComponent
+                            sectionData={sections[sectionKeys[sectionNo]]}
+                            onMove={this.moveToNextSection}
+                        />
+                    )
+                }else{
+                   if(sectionNo+1<sectionKeys.length){
+                       this.setState({sectionNo:sectionNo+1})
+                   }else{
+                       this.setState({answersComplete: true});
+                   }
+                }
             }
         }
 
     };
 
-    handleMove=(answer, mode)=>{
-        const {answers, questionNo, questions} = this.state;
-        answers[questionNo]=answer;
-
-        const questionKeys = Object.keys(questions);
-        if(mode === 'next'){
-            //check if next question exists
-            if(questionNo+1<questionKeys.length){
-                // move to the next question
-                   this.setState({answers,questionNo: questionNo+1});
-            }else{
-                // end of questions
-                this.setState({answers, answersComplete:true});
+    moveToNextSection=(answersData, mode)=>{
+        const {sections, sectionNo, answers}=this.state;
+        const sectionKeys=Object.keys(sections);
+        answers[sectionKeys[sectionNo]]=answersData;
+        if(mode==='next'){
+            // move to next section
+            if(sectionNo+1<sectionKeys.length){
+                this.setState({
+                    answers,
+                    sectionNo:sectionNo+1
+                })
             }
-        }else{
-            // check if the previous question works
-            if(questionNo-1<0){
-                // question No is the beginning
-                this.setState({answers,questionNo:0});
-            }else{
-                // previous question No
-                this.setState({answers,questionNo: questionNo-1});
+            // all sections added move to review
+            else{
+                this.setState({
+                    answers,
+                    answersComplete:true
+                });
             }
         }
-    };
-
+        // move to previous section
+        else{
+            if(sectionNo-1<0){
+                this.setState({
+                    sectionNo:0,
+                    answers
+                })
+            }else{
+                this.setState({
+                    sectionNo:sectionNo-1,
+                    answers
+                })
+            }
+        }
+    }
 
     renderDetails=(details)=>{
         if(details){
@@ -186,9 +207,9 @@ class Home extends React.Component{
     };
 
     handleSubmitAnswers=(answers)=>{
-        const {name, uid, quizId, questions}=this.state;
+        const {name, uid, quizId, sections}=this.state;
         answers['name']=name;
-        this.props.submitQuizAnswers(uid,quizId,answers,questions,res=>{
+        this.props.submitQuizAnswers(uid,quizId,answers,sections,res=>{
            res.status===1?
            this.setState({loading:false,quizComplete:true, quizCompleteData:res.data}):
            this.setState({loading:false,error:res.msg})
@@ -199,7 +220,7 @@ class Home extends React.Component{
       this.setState({
           started:false,
           name:'',
-          questionNo:0,
+          sectionNo:0,
           answers:{},
           nameComplete:false,
           answersComplete:false,
@@ -260,13 +281,13 @@ class Home extends React.Component{
 }
 const mapStateToProps=(state, ownProps)=>{
     const id = ownProps.match.params.id;
-    const {details,questions, loaded}=state.userQuiz;
+    const {details,sections, loaded}=state.userQuiz;
 
    return{
        id:id?id.slice(1):null,
        loaded,
        details,
-       questions
+       sections
    }
 };
 export default connect(mapStateToProps, {userGetQuiz, submitQuizAnswers})(Home);

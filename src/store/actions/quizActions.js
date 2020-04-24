@@ -71,9 +71,9 @@ export const updateQuizDetails=(uid,id,data,callback)=>(dispatch, getState)=>{
         }).catch(err=>err?callback({status:2,msg:err.message}):null)
 };
 
-export const addQuestion=(uid,quizId,data,callback)=>(dispatch,getState)=>{
+export const addQuestion=(uid,quizId,sectionId,data,callback)=>(dispatch,getState)=>{
     const {title,answer,type,A,B,C,D}=data;
-    const ref = database.ref(`quizes/${uid}/${quizId}/questions`);
+    const ref = database.ref(`quizes/${uid}/${quizId}/sections/${sectionId}/questions`);
     ref.push({
         title,
         answer,
@@ -86,8 +86,8 @@ export const addQuestion=(uid,quizId,data,callback)=>(dispatch,getState)=>{
         callback({status:1});
     }).catch(err=>err?callback({status:2,msg:err.message}):null);
 };
-export const updateQuestion=(uid,quizId,questionId,data,callback)=>(dispatch,getState)=>{
-    const ref =database.ref(`quizes/${uid}/${quizId}/questions/${questionId}`);
+export const updateQuestion=(uid,quizId,sectionId,questionId,data,callback)=>(dispatch,getState)=>{
+    const ref =database.ref(`quizes/${uid}/${quizId}/sections/${sectionId}/questions/${questionId}`);
     const {title,answer,type,A,B,C,D}=data;
     ref.update({
         title,
@@ -104,11 +104,52 @@ export const updateQuestion=(uid,quizId,questionId,data,callback)=>(dispatch,get
 
 };
 
-export const deleteQuestion=(uid,quizId,questionId, callback)=>(dispatch,getState)=>{
-    const ref =database.ref(`quizes/${uid}/${quizId}/questions/${questionId}`);
+export const deleteQuestion=(uid,quizId,questionId,sectionId,callback)=>(dispatch,getState)=>{
+    const ref =database.ref(`quizes/${uid}/${quizId}/sections/${sectionId}/questions/${questionId}`);
     ref.remove()
-        .then(()=>callback({status:1}))
+        .then(()=>{
+            const newData = getState().admin.quizes[quizId];
+            newData['id']=quizId;
+            dispatch({type:LOAD_QUIZ,payload:newData});
+            callback({status:1})
+        })
         .catch(err=>err?callback({status:2,msg:err.message}):null);
+};
+
+export const addSection=(uid,quizId,title,callback)=>(dispatch, getState)=>{
+    const ref = database.ref(`quizes/${uid}/${quizId}/sections`);
+    ref.push({title})
+        .then(()=>{
+            const newData = getState().admin.quizes[quizId];
+            newData['id']=quizId;
+            dispatch({type:LOAD_QUIZ,payload:newData});
+            callback({status:1});
+        })
+        .catch(err=>err?callback({status:2,msg:err.message}):null)
+}
+
+export const editSection=(uid,quizId,sectionId,title,callback)=>(dispatch, getState)=>{
+    const ref = database.ref(`quizes/${uid}/${quizId}/sections/${sectionId}`);
+    ref.update({title})
+        .then(()=>{
+            const newData = getState().admin.quizes[quizId];
+            newData['id']=quizId;
+            dispatch({type:LOAD_QUIZ,payload:newData});
+            callback({status:1});
+        })
+        .catch(err=>err?callback({status:2,msg:err.message}):null);
+}
+
+export const deleteSection=(uid,quizId,sectionId, callback)=>(dispatch, getState)=>{
+  const ref = database.ref(`quizes/${uid}/${quizId}/sections/${sectionId}`);
+  ref.remove()
+      .then(()=>{
+          callback({status:1});
+          const newData = getState().admin.quizes[quizId];
+          newData['id']=quizId;
+          dispatch({type:LOAD_QUIZ,payload:newData});
+      })
+      .catch(err=>err?callback({status:2,msg:err.message}):null)
 };
 
 export const userGetQuiz=(uid,quizId,callback)=>dispatch=>{
@@ -118,11 +159,11 @@ export const userGetQuiz=(uid,quizId,callback)=>dispatch=>{
         const quiz= snap.val();
         if(quiz){
             const {host, title, completed, active, date}=quiz.details;
-            const questions = quiz.questions?quiz.questions:null;
+            const sections = quiz.sections?quiz.sections:null;
 
-            if(!completed && active && questions){
+            if(!completed && active && sections){
                 const newDetails = {host,title,date};
-                dispatch({type:USER_LOAD_QUIZ,payload:{questions,details:newDetails}});
+                dispatch({type:USER_LOAD_QUIZ,payload:{sections,details:newDetails}});
 
                 callback({status:1});
 
@@ -140,28 +181,40 @@ export const userGetQuiz=(uid,quizId,callback)=>dispatch=>{
 
 };
 
-export const submitQuizAnswers=(uid,quizId,answers,questions, callback)=>dispatch=>{
+export const submitQuizAnswers=(uid,quizId,answers,sections, callback)=>dispatch=>{
 
-    const data=Object.keys(questions).reduce((a,v,i)=>{
-
-        const correctAnswer  = questions[v].answer;
-        const answer = answers[i];
-        const percentage =stringSimilarity.compareTwoStrings(correctAnswer.toLowerCase(),answer.toLowerCase());
-
-        a[i]={
-          answer,
-          correct:percentage>=0.4,
-          percentage
-        };
-        return a;
+    let totalCorrect =0;
+    const sectionData=Object.keys(sections).reduce((ar,k,i)=>{
+        const questions = sections[k].questions;
+        if(questions){
+            ar[k]=Object.keys(questions).reduce((a,v,i)=>{
+                const correctAnswer  = questions[v].answer;
+                const answer = answers[k][i];
+                const percentage =stringSimilarity.compareTwoStrings(correctAnswer.toLowerCase(),answer.toLowerCase());
+                const check = percentage>=0.9;
+                if(check){
+                    totalCorrect++;
+                }
+                a[i]={
+                    answer,
+                    correct:check,
+                    percentage
+                };
+                return a;
+            },{})
+        }
+        return ar;
     },{});
 
-    data['name']=answers['name'];
+    const data ={
+        name:answers['name'],
+        totalCorrect,
+        sections:sectionData
+    }
 
   const ref = database.ref(`quizes/${uid}/${quizId}/answers`);
   ref.push(data)
       .then(()=>{
-
           callback({status:1, data})
       }).catch(err=>err?callback({status:2,msg:err.message}):null)
 };
